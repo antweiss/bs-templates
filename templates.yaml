@@ -1,12 +1,16 @@
 apiVersion: scaffolder.backstage.io/v1beta3
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-template
 kind: Template
 metadata:
   name: expressjs-template
   title: Express.js Template
-  description: Creates a an Expressjs app for the StageCentral Workshop
+  description: Creates an Expressjs app for the workshop
 spec:
   owner: user:guest
   type: app
+
+  # These parameters are used to generate the input form in the frontend, and are
+  # used to gather input data for the execution of the template.
   parameters:
     - title: Fill in some steps
       required:
@@ -24,37 +28,43 @@ spec:
         - repoUrl
       properties:
         repoUrl:
-        title: Repository Location
-        type: string
-        ui:field: RepoUrlPicker
-        ui:options:
-          allowedHosts:
-            - github.com
+          title: Repository Location
+          type: string
+          ui:field: RepoUrlPicker
+          ui:options:
+            allowedHosts:
+              - github.com
+
+  # These steps are executed in the scaffolder backend, using data that we gathered
+  # via the parameters above.
   steps:
-    - id: fetch-template
-      name: Fetch Template Repo
+    # Each step executes an action, in this case one templates files into the working directory.
+    - id: fetch-base
+      name: Fetch Base
       action: fetch:template
       input:
-        url: ./express
-        #this defines that only .njk files will be templated
         templateFileExtension: true
+        url: ./express
         values:
           name: ${{ parameters.name }}
-    - id: write-catalog-info
+
+    - id: catalog-write
       name: Write Catalog Info
       action: catalog:write
       input:
-        entity: 
-          apiVersion: backstage.io/v1alpha1
-          kind: Component
-          metadata:
-            name: ${{ parameters.name }}
-            namespace: default
-            description: The ${{ parameters.name }} service
-          spec:
-            type: app
-            lifecycle: production
-            owner: group:guests
+        entity:
+            apiVersion: backstage.io/v1alpha1
+            kind: Component
+            metadata:
+                name: ${{ parameters.name }}
+                namespace: default
+                description: The ${{ parameters.name }} service
+            spec:
+                type: app
+                lifecycle: production
+                owner: group:guests
+
+    # This step publishes the contents of the working directory to GitHub.
     - id: publish
       name: Publish
       action: publish:github
@@ -62,12 +72,16 @@ spec:
         allowedHosts: ['github.com']
         description: This is ${{ parameters.name }}
         repoUrl: ${{ parameters.repoUrl }}
+
+    # The final step is to register our new component in the catalog.
     - id: register
       name: Register
       action: catalog:register
       input:
         repoContentsUrl: ${{ steps['publish'].output.repoContentsUrl }}
         catalogInfoPath: '/catalog-info.yaml'
+
+  # Outputs are displayed to the user after a successful execution of the template.
   output:
     links:
       - title: Repository
@@ -75,4 +89,3 @@ spec:
       - title: Open in catalog
         icon: catalog
         entityRef: ${{ steps['register'].output.entityRef }}
-

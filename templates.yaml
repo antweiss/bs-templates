@@ -10,7 +10,7 @@ spec:
   parameters:
     - title: Fill in some steps
       required:
-      - name
+        - name
       properties:
         name:
           title: Name
@@ -21,7 +21,7 @@ spec:
             rows: 5
     - title: Choose a location
       required:
-      - repoUrl
+        - repoUrl
       properties:
         repoUrl:
         title: Repository Location
